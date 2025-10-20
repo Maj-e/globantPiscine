@@ -1,0 +1,14 @@
+.grid-container {
+    display: grid;
+    justify-content: center;
+    grid-template-columns: repeat(4, 100px);
+    grid-template-rows: repeat(4, 100px);
+    gap: 5px;
+    border-radius: 50%;
+    height: 400px;
+}
+
+.cell {
+    display: flex;
+    border: solid black;
+}
