@@ -13,6 +13,11 @@
     border: solid black;
 }
 
-.colorGrid {
+.colorGrid1 {
     background-color: blue;
+}
+
+.colorGrid2
+{
+    background-color: red;
 }
