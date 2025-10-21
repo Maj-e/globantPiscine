@@ -1,66 +1,153 @@
-let activeIndex = 1;
+let grid = Array(16).fill(0);
 
-function initGame()
-{
+function setCellStyle(cell, value) {
+    cell.classList.remove('tile-2', 'tile-4', 'tile-8', 'tile-16', 'tile-32', 'tile-64', 'tile-128', 'tile-256', 'tile-512', 'tile-1024', 'tile-2048');
+    
+    if (value) {
+        cell.classList.add(`tile-${value}`);
+    }
+}
+
+function updateDisplay() {
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach((cell, index) => {
+        const value = grid[index];
+        cell.textContent = value || '';
+        setCellStyle(cell, value);
+    });
+}
+
+function spawnRandomTile() {
+    const emptyCells = grid
+        .map((val, idx) => val === 0 ? idx : -1)
+        .filter(idx => idx !== -1);
+    
+    if (emptyCells.length === 0) return false;
+    
+    const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+    const value = Math.random() < 0.8 ? 2 : 4;
+    grid[randomIndex] = value;
+    return true;
+}
+
+function initGame() {
     const gridContainer = document.querySelector('.grid-container');
+    gridContainer.innerHTML = '';
+    grid = Array(16).fill(0);
 
     for (let i = 0; i < 16; i++) {
         const cell = document.createElement('div');
         cell.classList.add('cell');
-        cell.dataset.index = i + 1;
-        cell.textContent = i + 1;
         gridContainer.appendChild(cell);
-        setActive(activeIndex);
+    }
+    
+    spawnRandomTile();
+    spawnRandomTile();
+    updateDisplay();
+}
 
+function getLine(startIndex, step, count = 4) {
+    const line = [];
+    for (let i = 0; i < count; i++) {
+        line.push(grid[startIndex + i * step]);
+    }
+    return line;
+}
+
+function setLine(startIndex, step, line) {
+    for (let i = 0; i < line.length; i++) {
+        grid[startIndex + i * step] = line[i];
     }
 }
 
-function setActive(index) {
-    const prev = document.querySelector(`[data-index="${activeIndex}"]`);
-    if (prev) prev.classList.remove('colorGrid');
+function mergeLine(line) {
+    let newLine = line.filter(val => val !== 0);
+    
+    for (let i = 0; i < newLine.length - 1; i++) {
+        if (newLine[i] === newLine[i + 1]) {
+            newLine[i] *= 2;
+            newLine.splice(i + 1, 1);
+        }
+    }
+    
+    while (newLine.length < 4) {
+        newLine.push(0);
+    }
+    
+    return newLine;
+}
 
-    const next = document.querySelector(`[data-index="${index}"]`);
-    if (next) next.classList.add('colorGrid');
-
-    activeIndex = index;
+function move(direction) {
+    let moved = false;
+    const oldGrid = [...grid];
+    
+    if (direction === 'left') {
+        for (let row = 0; row < 4; row++) {
+            const line = getLine(row * 4, 1);
+            const newLine = mergeLine(line);
+            setLine(row * 4, 1, newLine);
+        }
+    } else if (direction === 'right') {
+        for (let row = 0; row < 4; row++) {
+            const line = getLine(row * 4, 1);
+            const reversed = line.reverse();
+            const merged = mergeLine(reversed);
+            const newLine = merged.reverse();
+            setLine(row * 4, 1, newLine);
+        }
+    } else if (direction === 'up') {
+        for (let col = 0; col < 4; col++) {
+            const line = getLine(col, 4);
+            const newLine = mergeLine(line);
+            setLine(col, 4, newLine);
+        }
+    } else if (direction === 'down') {
+        for (let col = 0; col < 4; col++) {
+            const line = getLine(col, 4);
+            const reversed = line.reverse();
+            const merged = mergeLine(reversed);
+            const newLine = merged.reverse();
+            setLine(col, 4, newLine);
+        }
+    }
+    
+    moved = oldGrid.some((val, idx) => val !== grid[idx]);
+    
+    return moved;
 }
 
 function handleArrow(key) {
-    const row = Math.floor((activeIndex - 1) / 4);
-    const col = (activeIndex - 1) % 4;
-
-    let newRow = row;
-    let newCol = col;
-
-    switch (key) {
-        case 'ArrowUp':
-            if (row > 0) newRow--;
-            break;
-        case 'ArrowDown':
-            if (row < 3) newRow++;
-            break;
-        case 'ArrowLeft':
-            if (col > 0) newCol--;
-            break;
-        case 'ArrowRight':
-            if (col < 3) newCol++;
-            break;
-        default:
-            return;
+    const directionMap = {
+        'ArrowUp': 'up',
+        'ArrowDown': 'down',
+        'ArrowLeft': 'left',
+        'ArrowRight': 'right'
+    };
+    
+    const direction = directionMap[key];
+    if (!direction) return;
+    
+    const moved = move(direction);
+    
+    if (moved) {
+        spawnRandomTile();
+        updateDisplay();
     }
-
-    const newIndex = newRow * 4 + newCol + 1;
-    setActive(newIndex);
 }
 
-function playGame()
-{
+function playGame() {
     document.addEventListener('keydown', (event) => {
         if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key)) {
             event.preventDefault();
             handleArrow(event.key);
         }
     });
+
 }
+
+document.querySelector('#restart-btn').onclick = function() {
+    initGame();
+};
+
 initGame();
 playGame();
